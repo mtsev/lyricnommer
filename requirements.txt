@@ -1,0 +1,5 @@
+beautifulsoup4==4.7.1
+click==7.0
+eyeD3==0.8.10
+mutagen==1.42.0
+six==1.12.0
