@@ -56,6 +56,8 @@ def main():
 # Tries to get lyrics from different sources
 def get_lyrics(title, artist):
     lyrics = scrape_metrolyrics(title, artist)
+    if not lyrics:
+        lyrics = scrape_darklyrics(title, artist)
     return lyrics
 
 
