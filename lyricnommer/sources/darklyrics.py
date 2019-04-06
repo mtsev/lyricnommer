@@ -18,7 +18,7 @@ import urllib.request, urllib.error, urllib.parse
 import string
 import re
 
-import scrapers.util as Util
+from . import util
 
 
 class Parser(object):
@@ -30,7 +30,7 @@ class Parser(object):
     def parse(self):
         # remove unwanted characters from artist and title strings
         clean_artist = self.artist.lower()
-        clean_artist = Util.remove_punctuation(clean_artist)
+        clean_artist = util.remove_punctuation(clean_artist)
         clean_artist = clean_artist.replace(" ", "")
 
         # create artist Url
@@ -42,7 +42,7 @@ class Parser(object):
 #            print("could not connect to darklyrics.com")
             return ""
 
-        resp = Util.bytes_to_string(resp)
+        resp = util.bytes_to_string(resp)
 
         # find title with lyrics url
         match = re.search("<a href=\"\.\.(.*?)\">" + self.title + "</a><br />", resp, re.I)
@@ -57,7 +57,7 @@ class Parser(object):
 #            print("could not connect to darklyrics.com")
             return ""
 
-        resp = Util.bytes_to_string(resp)
+        resp = util.bytes_to_string(resp)
 
         self.track_no = url.split("#")[1]
 

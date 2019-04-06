@@ -19,7 +19,7 @@ import string
 import html
 import re
 
-import scrapers.util as Util
+from . import util
 
 
 class Parser(object):
@@ -31,8 +31,8 @@ class Parser(object):
     def parse(self):
         # remove punctuation from artist/title
         clean_artist = self.artist.replace("+", "and")
-        clean_artist = Util.remove_punctuation(clean_artist)
-        clean_title = Util.remove_punctuation(self.title)
+        clean_artist = util.remove_punctuation(clean_artist)
+        clean_title = util.remove_punctuation(self.title)
 
         # create lyrics Url
         url = "http://www.metrolyrics.com/" + clean_title.replace(" ", "-") + "-lyrics-" \
@@ -44,7 +44,7 @@ class Parser(object):
 #            print("could not connect to metrolyrics.com")
             return ""
 
-        resp = Util.bytes_to_string(resp)
+        resp = util.bytes_to_string(resp)
 
         # verify title
         title = resp
