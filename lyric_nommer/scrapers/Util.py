@@ -34,18 +34,19 @@ def bytes_to_string(data):
             if results is not None:
                 encoding = results.group(1)
                 decoded_string = data.decode(encoding)
-                print("encoding: " + encoding)
+#                print("encoding: " + encoding)
             else:
                 decoded_string = partial_string
         except:
-            print("Fail trying to get declared bytes encoding (charset) using regular expression")
+#            print("Fail trying to get declared bytes encoding (charset) using regular expression")
             try:
                 encoding = chardet.detect(data)['encoding']
                 decoded_string = data.decode(encoding, 'replace')
             except:
-                print("could not detect bytes encoding, assume utf-8")
+#                print("could not detect bytes encoding, assume utf-8")
                 decoded_string = partial_string
     except:
-        print("failed to decode bytes to string")
+#        print("failed to decode bytes to string")
+        pass
 
     return decoded_string

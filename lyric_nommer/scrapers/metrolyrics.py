@@ -37,11 +37,11 @@ class Parser(object):
         # create lyrics Url
         url = "http://www.metrolyrics.com/" + clean_title.replace(" ", "-") + "-lyrics-" \
               + clean_artist.replace(" ", "-") + ".html"
-        print("metrolyrics Url " + url)
+#        print("metrolyrics Url " + url)
         try:
             resp = urllib.request.urlopen(url, None, 3).read()
         except:
-            print("could not connect to metrolyrics.com")
+#            print("could not connect to metrolyrics.com")
             return ""
 
         resp = Util.bytes_to_string(resp)
@@ -50,23 +50,22 @@ class Parser(object):
         title = resp
         start = title.find("<title>")
         if start == -1:
-            print("no title found")
+#            print("no title found")
             return ""
         title = title[(start + 7):]
         end = title.find(" Lyrics | MetroLyrics</title>")
         if end == -1:
-            print("no title end found")
+#            print("no title end found")
             return ""
         title = title[:end]
         title = html.unescape(title)
         songdata = title.split(" - ")
         try:
             if self.artist != songdata[0].lower() or self.title != songdata[1].lower():
-                print("wrong artist/title! " + songdata[0].lower() + " - " + songdata[1].lower())
-                print(f"input was {self.artist} - {self.title}")
+#                print("wrong artist/title! " + songdata[0].lower() + " - " + songdata[1].lower())
                 return ""
         except:
-            print("incomplete artist/title")
+#            print("incomplete artist/title")
             return ""
 
         self.lyrics = self.get_lyrics(resp)

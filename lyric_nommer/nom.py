@@ -38,20 +38,19 @@ def main():
                     if lyrics:
                         audio.add(USLT(encoding=3, lang="eng", text=lyrics))
                         audio.save()
-                        print(f'Lyrics added to \"{file_path.name}\":')
+                        print("\033[32mLyrics added to \"" + file_path.name + "\"\033[0m")
                         print("================================================================")
                         print(lyrics)
                         print("================================================================")
+                        print()
                     else:
-                        print(f'Couldn\'t find lyrics for \"{file_path.name}\"')
+                        print("\033[31mCouldn't find lyrics for \"" + file_path.name  + "\"\033[0m")
 
                 else:
-                    print(f'Existing lyrics on \"{file_path.name}\"')
+                    print("\033[33mExisting lyrics on \"" + file_path.name + "\"\033[0m")
 
             except ID3NoHeaderError:
-                print(f'Couldn\'t tag \"{file_path.name}\" (unsupported file type)')
-
-        print()
+                print("\033[31mCouldn't tag \"" + file_path.name + "\" (unsupported file type)\033[0m")
 
 
 # Tries to get lyrics from different sources
