@@ -19,7 +19,7 @@ import string
 import html
 import re
 
-import scrapers.Util as Util
+import scrapers.util as Util
 
 
 class Parser(object):
