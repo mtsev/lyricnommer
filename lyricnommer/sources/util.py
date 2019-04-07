@@ -15,6 +15,9 @@
 
 import re
 import string
+import logging
+
+log = logging.getLogger(__name__)
 
 def remove_punctuation(data):
     for c in string.punctuation:
@@ -34,19 +37,19 @@ def bytes_to_string(data):
             if results is not None:
                 encoding = results.group(1)
                 decoded_string = data.decode(encoding)
-#                print("encoding: " + encoding)
+                log.debug("encoding: " + encoding)
             else:
                 decoded_string = partial_string
         except:
-#            print("Fail trying to get declared bytes encoding (charset) using regular expression")
+            log.debug("Fail trying to get declared bytes encoding (charset) using regular expression")
             try:
                 encoding = chardet.detect(data)['encoding']
                 decoded_string = data.decode(encoding, 'replace')
             except:
-#                print("could not detect bytes encoding, assume utf-8")
+                log.debug("could not detect bytes encoding, assume utf-8")
                 decoded_string = partial_string
     except:
-#        print("failed to decode bytes to string")
+        log.debug("failed to decode bytes to string")
         pass
 
     return decoded_string

@@ -1,8 +1,12 @@
+import logging
 import mutagen
 from mutagen.id3 import ID3, USLT
 from mutagen.id3 import ID3NoHeaderError
 
+from .exceptions import *
 from .sources import *
+
+log = logging.getLogger(__name__)
 
 # Get lyrics from metrolyrics.com
 def scrape_metrolyrics(title, artist):
@@ -13,8 +17,8 @@ def scrape_metrolyrics(title, artist):
     try:
         lyrics = parser.parse()
     except Exception as e:
-        print("Error in metrolyrics parser")
-        print(str(e))
+        log.debug("Error in metrolyrics parser")
+        log.debug(str(e))
         return ""
 
     return lyrics
@@ -29,8 +33,8 @@ def scrape_darklyrics(title, artist):
     try:
         lyrics = parser.parse()
     except Exception as e:
-        print("Error in darklyrics parser")
-        print(str(e))
+        log.debug("Error in darklyrics parser")
+        log.debug(str(e))
         return ""
 
     return lyrics
@@ -48,16 +52,12 @@ def add_lyrics(file_path, kind):
             if lyrics:
                 audio.add(USLT(encoding=3, lang="eng", text=lyrics))
                 audio.save()
-                print("\033[32mLyrics added to \"" + file_path.name + "\"\033[0m")
-                print("================================================================")
-                print(lyrics)
-                print("================================================================")
-                print()
+
             else:
-                print("\033[31mCouldn't find lyrics for \"" + file_path.name  + "\"\033[0m")
+                raise LyricsNotFoundError()
 
         else:
-            print("\033[33mExisting lyrics on \"" + file_path.name + "\"\033[0m")
+            raise ExistingLyricsError()
 
 
 def delete_lyrics(file_path, kind):

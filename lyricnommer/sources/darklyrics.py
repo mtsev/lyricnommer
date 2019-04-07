@@ -17,15 +17,16 @@
 import urllib.request, urllib.error, urllib.parse
 import string
 import re
+import logging
 
 from . import util
-
 
 class Parser(object):
     def __init__(self, artist, title):
         self.artist = artist
         self.title = title
         self.lyrics = ""
+        self.log = logging.getLogger(__name__)
 
     def parse(self):
         # remove unwanted characters from artist and title strings
@@ -35,11 +36,11 @@ class Parser(object):
 
         # create artist Url
         url = "http://www.darklyrics.com/" + clean_artist[:1] + "/" + clean_artist + ".html"
-#        print("darklyrics artist Url " + url)
+        self.log.debug("darklyrics artist Url " + url)
         try:
             resp = urllib.request.urlopen(url, None, 3).read()
         except:
-#            print("could not connect to darklyrics.com")
+            self.log.debug("could not connect to darklyrics.com")
             return ""
 
         resp = util.bytes_to_string(resp)
@@ -47,14 +48,14 @@ class Parser(object):
         # find title with lyrics url
         match = re.search("<a href=\"\.\.(.*?)\">" + self.title + "</a><br />", resp, re.I)
         if match is None:
-#            print("could not find title: " + self.title)
+            self.log.debug("could not find title: " + self.title)
             return ""
         url = "http://www.darklyrics.com" + match.group(1)
-#        print("darklyrics Url " + url)
+        self.log.debug("darklyrics Url " + url)
         try:
             resp = urllib.request.urlopen(url, None, 3).read()
         except:
-#            print("could not connect to darklyrics.com")
+            self.log.debug("could not connect to darklyrics.com")
             return ""
 
         resp = util.bytes_to_string(resp)
@@ -71,7 +72,7 @@ class Parser(object):
         match = re.search("<h3><a name=\"" + self.track_no + "\">" + self.track_no + "\. " + self.title + "</a></h3>",
                           resp, re.I)
         if match is None:
-#            print("lyrics start not found")
+            self.log.debug("lyrics start not found")
             return ""
         start = match.end()
         resp = resp[start:]
@@ -81,7 +82,7 @@ class Parser(object):
             # case lyrics are the last ones on the page
             end = resp.find("<div ")
         if end == -1:
-#            print("lyrics end not found")
+            self.log.debug("lyrics end not found")
             return ""
 
         resp = resp[:end]
