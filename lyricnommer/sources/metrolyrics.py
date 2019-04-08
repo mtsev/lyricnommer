@@ -7,8 +7,7 @@ from bs4 import BeautifulSoup
 from ..exceptions import *
 
 log = logging.getLogger(__name__)
-#import sys
-#logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
+
 
 def scrape(title, artist):
     """Scrape lyrics from metrolyrics.com"""

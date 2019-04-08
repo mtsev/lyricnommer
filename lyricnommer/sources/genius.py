@@ -8,6 +8,7 @@ from ..exceptions import *
 
 log = logging.getLogger(__name__)
 
+
 def scrape(title, artist):
     """Scrape lyrics from genius.com"""
     # Format artist and title for building url
@@ -15,7 +16,7 @@ def scrape(title, artist):
     artist = format(artist)
 
     # Build url
-    url = "http://www.genius.com/{}-{}-lyrics".format(artist, title)
+    url = "http://genius.com/{}-{}-lyrics".format(artist, title)
 
     # Request url
     try:
@@ -24,7 +25,7 @@ def scrape(title, artist):
     except requests.ConnectionError as e:
         log.debug("Connection error")
         log.debug(e)
-        raise ConnectionError("Couldn't connect to www.genius.com")
+        raise ConnectionError("Couldn't connect to genius.com")
 
     if resp.status_code != 200:
         log.debug("Request failed with %d", resp.status_code)

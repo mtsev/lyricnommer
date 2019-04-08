@@ -6,3 +6,9 @@ class ExistingLyricsError(Exception):
 
 class ConnectionError(Exception):
     pass
+
+class UnsupportedTypeError(Exception):
+    pass
+
+class UnknownTypeError(Exception):
+    pass

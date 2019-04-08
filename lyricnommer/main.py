@@ -1,21 +1,24 @@
 import sys
 import argparse
 import logging
-import filetype
 from pathlib import Path
 
 from .exceptions import *
 from . import tag
 
-supported_types = ['mp3']
+supported_types = ('mp3', 'flac', 'ogg')
 unsupported = []
 existing = []
 notfound = []
+
+log = logging.getLogger(__package__)
+
 
 def main():
     """Main"""
     # Parse user input
     parser = parse_args(sys.argv[1:])
+    parser.no_bar |= parser.debug
 
     # Check that specified path is valid
     p = Path(parser.path)
@@ -23,49 +26,113 @@ def main():
         sys.exit('nom.py: error: invalid path')
 
     # Set up logger based on flags
-    log = log_setup(parser)
+    log_setup(parser)
     log.debug("\033[31mDEBUG has been set\033[0m")
 
-    # Initialise counter for number of files tagged
+    # Initialise counters
     tagged = 0
     iteration = 0
 
     # Grab all files in directory and subdirectories
     files = list(f for f in p.glob('**/*') if f.is_file())
 
-    # Check and tag each file
+    # Iterate through files and add lyric tags
     for file_path in files:
-        kind = filetype.guess(str(file_path))
+        try:
+            if parser.force != None:
+                tag.delete_lyrics(file_path, parser.force)
+            tag.add_lyrics(file_path)
 
-        if kind is None or kind.mime[0:6] != "audio/":
-            # Ignore non audio files
-            pass
+        except UnknownTypeError:
+            # Ignore unrecognised files
+            log.debug("Unknown file type: %s", file_path.relative_to(p))
 
-        elif not kind.extension in supported_types:
-            # Unsupported file type
-            unsupported.append((file_path.relative_to(p), kind.extension))
+        except UnsupportedTypeError as e:
+            unsupported.append((file_path.relative_to(p), str(e)))
+
+        except LyricsNotFoundError:
+            log.debug("Lyrics not found: %s", file_path.relative_to(p))
+            notfound.append(file_path.relative_to(p))
+
+        except ExistingLyricsError:
+            log.debug("Existing lyrics: %s", file_path.relative_to(p))
+            existing.append(file_path.relative_to(p))
 
         else:
-            # Tags away!
-            try:
-                if parser.force != None:
-                    tag.delete_lyrics(file_path, kind.extension, parser.force)
-                tag.add_lyrics(file_path, kind.extension)
+            log.debug("Lyrics added: %s", file_path.relative_to(p))
+            tagged += 1
 
-            except LyricsNotFoundError as e:
-                log.debug("Lyrics not found error")
-                notfound.append(file_path.relative_to(p))
-
-            except ExistingLyricsError as e:
-                log.debug("Existing lyrics error")
-                existing.append(file_path.relative_to(p))
-
-            else:
-                tagged += 1
-
-        if not parser.debug:
+        # Don't want to see progress bar in debug mode
+        if not parser.no_bar:
             iteration += 1
-            print_progress(iteration, len(files), "Nomming...")
+            print_progress(iteration, len(files), prefix="Nomming...", bar_length=50)
+
+    # Print output to user
+    print_results(tagged)
+
+
+def parse_args(args):
+    """Parse user input"""
+    parser = argparse.ArgumentParser(
+    description="""Command line tool to add lyrics to music files.
+                    Supported file types: {}.""".format(", ".join(supported_types)))
+    parser.add_argument('path', help='path of the directory to be tagged')
+    parser.add_argument('-f', '--force', 
+                        metavar='STRING',
+                        nargs='*', 
+                        help='overwrite lyrics containing STRING (case insensitive), or all lyrics if no STRING given')
+    parser.add_argument('-v', '--verbose', action='store_true', help='list the files that failed')
+    parser.add_argument('--no-bar', action='store_true', help='don\'t show the progress bar')
+    parser.add_argument('--debug', action='store_true', help=argparse.SUPPRESS)
+
+    return parser.parse_args(args)
+
+
+def log_setup(parser):
+    """Set up logger to print to user"""
+    # Set level from options
+    if parser.debug:
+        log.setLevel(logging.DEBUG)
+    elif parser.verbose:
+        log.setLevel(logging.INFO)
+    else:
+        log.setLevel(logging.WARNING)
+
+    # Set output format
+    formatter = logging.Formatter("%(message)s")
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+
+
+# https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
+def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        bar_length  - Optional  : character length of bar (Int)
+    """
+    str_format = "{0:." + str(decimals) + "f}"
+    percents = str_format.format(100 * (iteration / float(total)))
+    filled_length = int(round(bar_length * iteration / float(total)))
+    bar = '█' * filled_length + '-' * (bar_length - filled_length)
+
+    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+
+    if iteration == total:
+        sys.stdout.write('\n\n')
+    sys.stdout.flush()
+
+
+def print_results(tagged):
+    """Print output to console for user"""
+    log.debug('-' * 60)
 
     # Print number of files tagged
     if tagged:
@@ -90,65 +157,5 @@ def main():
     if unsupported:
         log.info("Unsupported file type for %d files", len(unsupported))
         for f in unsupported:
-            log.info(str(f[0]) + " (" + f[1] + ")")
+            log.info(str(f[0]) + " ('" + f[1] + "')")
         log.info('')
-
-def parse_args(args):
-    """Parse user input"""
-    parser = argparse.ArgumentParser(
-    description="""Command line tool to add lyrics to music files.
-                    Supported file types: {}.""".format(", ".join(supported_types)))
-    parser.add_argument('path', help='path of the directory to be tagged')
-    parser.add_argument('-f', '--force', 
-                        metavar='STRING',
-                        nargs='*', 
-                        help='overwrite lyrics containing any string (case insensitive), or all lyrics if no string given')
-    parser.add_argument('-v', '--verbose', action='store_true', help='list the files that failed')
-    parser.add_argument('--debug', action='store_true', help=argparse.SUPPRESS)
-
-    return parser.parse_args(args)
-
-def log_setup(parser):
-    """Set up logger to print to user"""
-    # Create logger
-    log = logging.getLogger(__package__)
-    
-    # Set level from options
-    if parser.debug:
-        log.setLevel(logging.DEBUG)
-    elif parser.verbose:
-        log.setLevel(logging.INFO)
-    else:
-        log.setLevel(logging.WARNING)
-
-    # Set output format
-    formatter = logging.Formatter("%(message)s")
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    handler.setFormatter(formatter)
-    log.addHandler(handler)
-
-    return log
-
-# https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
-def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        bar_length  - Optional  : character length of bar (Int)
-    """
-    str_format = "{0:." + str(decimals) + "f}"
-    percents = str_format.format(100 * (iteration / float(total)))
-    filled_length = int(round(bar_length * iteration / float(total)))
-    bar = '█' * filled_length + '-' * (bar_length - filled_length)
-
-    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
-
-    if iteration == total:
-        sys.stdout.write('\n\n')
-    sys.stdout.flush()
