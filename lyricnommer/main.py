@@ -8,7 +8,6 @@ from .exceptions import *
 from . import tag
 
 supported_types = ['mp3']
-tagged = []
 unsupported = []
 existing = []
 notfound = []
@@ -25,7 +24,10 @@ def main():
 
     # Set up logger based on flags
     log = log_setup(parser)
-    log.debug("\033[91mDEBUG has been set\033[0m")
+    log.debug("\033[31mDEBUG has been set\033[0m")
+
+    # Initialise counter for number of files tagged
+    tagged = 0
 
     # Grab all files in directory and subdirectories
     files = (f for f in p.glob('**/*') if f.is_file())
@@ -45,22 +47,24 @@ def main():
         else:
             # Tags away!
             try:
-                if parser.force:
-                    tag.delete_lyrics(file_path, kind.extension)
+                if parser.force != None:
+                    tag.delete_lyrics(file_path, kind.extension, parser.force)
                 tag.add_lyrics(file_path, kind.extension)
 
-            except LyricsNotFoundError:
+            except LyricsNotFoundError as e:
+                log.debug("Lyrics not found error")
                 notfound.append(file_path.relative_to(p))
 
-            except ExistingLyricsError:
+            except ExistingLyricsError as e:
+                log.debug("Existing lyrics error")
                 existing.append(file_path.relative_to(p))
 
             else:
-                tagged.append(file_path.relative_to(p))
+                tagged += 1
 
     # Print number of files tagged
     if tagged:
-        log.warning("Successfully added lyrics to %d files", len(tagged))
+        log.warning("\033[32mSuccessfully added lyrics to %d files\033[0m", tagged)
         log.info('')
 
     # Print error for lyrics not found
@@ -87,10 +91,13 @@ def main():
 def parse_args(args):
     """Parse user input"""
     parser = argparse.ArgumentParser(
-    description="""A command line tool to add lyrics to music files.
+    description="""Command line tool to add lyrics to music files.
                     Supported file types: {}.""".format(", ".join(supported_types)))
     parser.add_argument('path', help='path of the directory to be tagged')
-    parser.add_argument('-f', '--force', action='store_true', help='overwrite existing lyrics')
+    parser.add_argument('-f', '--force', 
+                        metavar='STRING',
+                        nargs='*', 
+                        help='overwrite lyrics containing any string (case insensitive), or all lyrics if no string given')
     parser.add_argument('-v', '--verbose', action='store_true', help='list the files that failed')
     parser.add_argument('--debug', action='store_true', help=argparse.SUPPRESS)
 

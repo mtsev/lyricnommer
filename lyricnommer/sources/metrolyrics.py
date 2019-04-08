@@ -1,87 +1,52 @@
-# Modified from https://github.com/dmo60/lLyrics/blob/master/lLyrics/MetrolyricsParser.py
-# Parser for Metrolyrics.com
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 2 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-import urllib.request, urllib.error, urllib.parse
-import string
-import html
-import re
 import logging
+import requests
+import string
+from unidecode import unidecode
+from bs4 import BeautifulSoup
 
-from . import util
+from ..exceptions import *
 
-class Parser(object):
-    def __init__(self, artist, title):
-        self.artist = artist.lower()
-        self.title = title.lower()
-        self.lyrics = ""
-        self.log = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
+#import sys
+#logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
 
-    def parse(self):
-        # remove punctuation from artist/title
-        clean_artist = self.artist.replace("+", "and")
-        clean_artist = util.remove_punctuation(clean_artist)
-        clean_title = util.remove_punctuation(self.title)
+def scrape(title, artist):
+    """Scrape lyrics from metrolyrics.com"""
+    # Format artist and title for building url
+    title = format(title)
+    artist = format(artist)
 
-        # create lyrics Url
-        url = "http://www.metrolyrics.com/" + clean_title.replace(" ", "-") + "-lyrics-" \
-              + clean_artist.replace(" ", "-") + ".html"
-        self.log.debug("metrolyrics Url " + url)
-        try:
-            resp = urllib.request.urlopen(url, None, 3).read()
-        except:
-            self.log.debug("could not connect to metrolyrics.com")
-            return ""
+    # Build url
+    url = "http://www.metrolyrics.com/{}-lyrics-{}.html".format(title, artist)
 
-        resp = util.bytes_to_string(resp)
+    # Request url
+    try:
+        log.debug("Requesting %s", url)
+        resp = requests.get(url)
+    except requests.ConnectionError as e:
+        log.debug("Connection error")
+        log.debug(e)
+        raise ConnectionError("Couldn't connect to www.metrolyrics.com")
 
-        # verify title
-        title = resp
-        start = title.find("<title>")
-        if start == -1:
-            self.log.debug("no title found")
-            return ""
-        title = title[(start + 7):]
-        end = title.find(" Lyrics | MetroLyrics</title>")
-        if end == -1:
-            self.log.debug("no title end found")
-            return ""
-        title = title[:end]
-        title = html.unescape(title)
-        songdata = title.split(" - ")
-        try:
-            if self.artist != songdata[0].lower() or self.title != songdata[1].lower():
-                self.log.debug("wrong artist/title! " + songdata[0].lower() + " - " + songdata[1].lower())
-                return ""
-        except:
-            self.log.debug("incomplete artist/title")
-            return ""
+    if resp.status_code != 200:
+        log.debug("Request failed with %d", resp.status_code)
+        return None
 
-        self.lyrics = self.get_lyrics(resp)
-        self.lyrics = string.capwords(self.lyrics, "\n").strip()
+    # Parse page
+    soup = BeautifulSoup(resp.text, "html.parser")
+    verses = [ v.get_text() for v in soup.find_all("p", "verse") ]
+    if not verses:
+        log.debug("No verses found")
+        return None
+  
+    return ("\n\n".join(verses))
 
-        return self.lyrics
 
-    def get_lyrics(self, resp):
-        
-        # isolate all verses in HTML source
-        verses = re.findall(r'<p class=\'verse\'>([^/]*?)</p>', resp)
-        resp = "\n\n".join(verses)
-
-        # replace unwanted parts
-        resp = resp.replace("<br>", "")
-        resp = resp.strip()
-
-        return resp
+def format(url_string):
+    """Format artist or title string for building url"""
+    url_string = url_string.replace("+", "and")
+    url_string = unidecode(url_string)
+    url_string = url_string.translate(str.maketrans('', '', string.punctuation))
+    url_string = ' '.join(url_string.split())
+    url_string = url_string.replace(" ", "-")
+    return url_string

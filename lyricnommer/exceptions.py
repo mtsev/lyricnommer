@@ -3,3 +3,6 @@ class LyricsNotFoundError(Exception):
 
 class ExistingLyricsError(Exception):
     pass
+
+class ConnectionError(Exception):
+    pass
