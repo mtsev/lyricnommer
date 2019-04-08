@@ -28,9 +28,10 @@ def main():
 
     # Initialise counter for number of files tagged
     tagged = 0
+    iteration = 0
 
     # Grab all files in directory and subdirectories
-    files = (f for f in p.glob('**/*') if f.is_file())
+    files = list(f for f in p.glob('**/*') if f.is_file())
 
     # Check and tag each file
     for file_path in files:
@@ -61,6 +62,10 @@ def main():
 
             else:
                 tagged += 1
+
+        if not parser.debug:
+            iteration += 1
+            print_progress(iteration, len(files), "Nomming...")
 
     # Print number of files tagged
     if tagged:
@@ -124,3 +129,26 @@ def log_setup(parser):
     log.addHandler(handler)
 
     return log
+
+# https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
+def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        bar_length  - Optional  : character length of bar (Int)
+    """
+    str_format = "{0:." + str(decimals) + "f}"
+    percents = str_format.format(100 * (iteration / float(total)))
+    filled_length = int(round(bar_length * iteration / float(total)))
+    bar = '█' * filled_length + '-' * (bar_length - filled_length)
+
+    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+
+    if iteration == total:
+        sys.stdout.write('\n\n')
+    sys.stdout.flush()
