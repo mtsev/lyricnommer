@@ -7,39 +7,7 @@ from .exceptions import *
 from .sources import *
 
 log = logging.getLogger(__name__)
-sources = (metrolyrics, darklyrics)
-
-# Get lyrics from metrolyrics.com
-def scrape_metrolyrics(title, artist):
-    if not (title and artist):
-        return None
-
-    parser = metrolyrics.Parser(artist, title)
-    try:
-        lyrics = parser.parse()
-    except Exception as e:
-        log.debug("Error in metrolyrics parser")
-        log.debug(str(e))
-        return None
-
-    return lyrics
-
-
-# Get lyrics from darklyrics.com
-def scrape_darklyrics(title, artist):
-    if not (title and artist):
-        return ""
-
-    parser = darklyrics.Parser(artist, title)
-    try:
-        lyrics = parser.parse()
-    except Exception as e:
-        log.debug("Error in darklyrics parser")
-        log.debug(str(e))
-        return None
-
-    return lyrics
-
+sources = (metrolyrics, lyricwiki, genius)
 
 def add_lyrics(file_path, kind):
     """Add lyric tag to file"""
@@ -61,7 +29,6 @@ def add_lyrics(file_path, kind):
         else:
             raise ExistingLyricsError()
 
-
 def delete_lyrics(file_path, kind, strings):
     """Delete lyric tags from file"""
     if kind == "mp3":
@@ -79,7 +46,6 @@ def delete_lyrics(file_path, kind, strings):
                     audio.delall("USLT")
                     audio.save()
                     return
-
 
 def get_lyrics(title, artist):
     """Try to get lyrics from different sources"""
