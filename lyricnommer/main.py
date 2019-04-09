@@ -6,7 +6,7 @@ from pathlib import Path
 from .exceptions import *
 from . import tag
 
-supported_types = ('mp3', 'flac', 'ogg')
+supported_types = ('mp3', 'flac', 'ogg', 'aiff')
 unsupported = []
 existing = []
 notfound = []
@@ -58,11 +58,14 @@ def main():
             log.debug("Existing lyrics: %s", file_path.relative_to(p))
             existing.append(file_path.relative_to(p))
 
+        except ConnectionError as e:
+            log.debug("Connection error: couldn't connect to any sources")
+            sys.exit("nom.py: error: please check your internet connection")
+
         else:
             log.debug("Lyrics added: %s", file_path.relative_to(p))
             tagged += 1
 
-        # Don't want to see progress bar in debug mode
         if not parser.no_bar:
             iteration += 1
             print_progress(iteration, len(files), prefix="Nomming...", bar_length=50)

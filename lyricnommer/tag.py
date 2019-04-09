@@ -15,39 +15,33 @@ def add_lyrics(file_path):
     audio = mutagen.File(file_path)
     try:
         tags = audio.tags
-
     except AttributeError:
         raise UnknownTypeError()
 
     else:
         if isinstance(tags, ID3):
-            if not tags.getall("USLT"):
-                try:
-                    lyrics = get_lyrics(tags.get('TIT2'), tags.get('TPE1'))
-                except Exception:
-                    raise
-                else:
-                    log.debug("Adding lyrics")
-                    tags.add(USLT(encoding=3, lang="eng", text=lyrics))
-                    tags.save(file_path)
-            else:
+            if tags.getall("USLT"):
                 raise ExistingLyricsError()
-
+            elif not (tags.get('TIT2') and tags.get('TPE1')):
+                log.debug("Title or Artist missing")
+                raise LyricsNotFoundError()
+            else:
+                lyrics = get_lyrics(tags.get('TIT2'), tags.get('TPE1'))
+                log.debug("Adding lyrics")
+                tags.add(USLT(encoding=3, text=lyrics))
+                tags.save(file_path)
+                
         elif isinstance(tags, Vorbis):
-            if 'LYRICS' not in tags:
-                try:
-                    lyrics = get_lyrics(tags['TITLE'][0], tags['ARTIST'][0])
-                except KeyError:
-                    log.debug("Artist or title missing")
-                    raise LyricsNotFoundError()
-                except Exception:
-                    raise
-                else:
-                    log.debug("Adding lyrics")
-                    tags['LYRICS'] = lyrics
-                    audio.save(file_path)
-            else:
+            if 'LYRICS' in tags:
                 raise ExistingLyricsError()
+            elif ('TITLE' not in tags) or ('ARTIST' not in tags):
+                log.debug("Title or Artist missing")
+                raise LyricsNotFoundError()
+            else:
+                lyrics = get_lyrics(tags['TITLE'][0], tags['ARTIST'][0])
+                log.debug("Adding lyrics")
+                tags['LYRICS'] = lyrics
+                audio.save(file_path) 
 
         else:
             raise UnsupportedTypeError(audio.mime[0][6:])
@@ -58,7 +52,6 @@ def delete_lyrics(file_path, strings):
     audio = mutagen.File(file_path)
     try:
         tags = audio.tags
-
     except AttributeError:
         raise UnknownTypeError()
 
@@ -78,7 +71,7 @@ def delete_lyrics(file_path, strings):
                         return
 
         elif isinstance(tags, Vorbis):
-            # Explicitly check for lyrics tags instead of catching KeyError
+            # No action needed if no lyrics exist
             if 'LYRICS' not in tags:
                 return
 
@@ -101,16 +94,18 @@ def delete_lyrics(file_path, strings):
 
 def get_lyrics(title, artist):
     """Try to get lyrics from different sources"""
-    if title and artist:
-        for src in sources:
-            try:
-                lyrics = src.scrape(str(title), str(artist))
-            except Exception:
-                raise
-                
+    connections = len(sources)
+    for src in sources:
+        try:
+            lyrics = src.scrape(str(title), str(artist))
             if lyrics:
                 return lyrics
-    else:
-        log.debug("Artist or title missing")
+
+        # Pass up exception if we couldn't connect to any sources
+        except ConnectionError as e:
+            log.debug(str(e))
+            connections -= 1
+            if not connections:
+                raise
 
     raise LyricsNotFoundError()

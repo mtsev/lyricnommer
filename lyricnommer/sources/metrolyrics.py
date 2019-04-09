@@ -23,7 +23,6 @@ def scrape(title, artist):
         log.debug("Requesting %s", url)
         resp = requests.get(url)
     except requests.ConnectionError as e:
-        log.debug("Connection error")
         log.debug(e)
         raise ConnectionError("Couldn't connect to www.metrolyrics.com")
 
