@@ -6,7 +6,7 @@ from pathlib import Path
 from .exceptions import *
 from . import tag
 
-supported_types = ('mp3', 'flac', 'ogg', 'aiff')
+supported_types = ('MP3', 'FLAC', 'Ogg', 'AIFF')
 unsupported = []
 existing = []
 notfound = []
