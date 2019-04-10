@@ -10,9 +10,9 @@ pip install -r requirements.txt
 ```
 
 ## Usage
-Given paths to files or directories, LyricNommer will search online for lyrics 
-for all the files, including in subdirectories. If it finds any, it will add them 
-to the file as lyrics metadata.
+Given one or more paths to files and/or directories, LyricNommer will search online 
+for lyrics for all the files, including in subdirectories. If it finds any, 
+it will add them to the file as lyrics metadata.
 ```bash
 ./nom.py "~/Desktop/my song.mp3" ~/Music
 ```
@@ -28,7 +28,7 @@ You can also only overwrite files which contain certain lyrics.
 ./nom.py -f badword "bad phrase" ~/Music    # overwrite lyrics containing "badword" or "bad phrase"
 ```
 
-You can see all the available options using the `-h` option.
+You can see all available options using the `-h` option.
 ```bash
 ./nom.py -h
 ```
