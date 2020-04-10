@@ -14,23 +14,23 @@ Given one or more paths to files and/or directories, LyricNommer will search onl
 for lyrics for all the files, including in subdirectories. If it finds any, 
 it will add them to the file as lyrics metadata.
 ```bash
-./nom.py "~/Desktop/my song.mp3" ~/Music
+./nom "~/Desktop/my song.mp3" ~/Music
 ```
 
 By default, LyricNommer will not add lyrics to files that already have them.
 You can force LyricNommer to overwrite existing lyrics using the `-f` option.
 ```bash
-./nom.py -f ~/Music
+./nom -f ~/Music
 ```
 
 You can also only overwrite files which contain certain lyrics.
 ```bash
-./nom.py -f badword "bad phrase" ~/Music    # overwrite lyrics containing "badword" or "bad phrase"
+./nom -f badword "bad phrase" ~/Music    # overwrite lyrics containing "badword" or "bad phrase"
 ```
 
 You can see all available options using the `-h` option.
 ```bash
-./nom.py -h
+./nom -h
 ```
 
 ## Sources
